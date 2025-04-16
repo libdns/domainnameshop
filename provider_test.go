@@ -23,21 +23,21 @@ type testRecordsCleanup = func()
 
 func setupTestRecords(t *testing.T, p *domainnameshop.Provider) ([]libdns.Record, testRecordsCleanup) {
 	testRecords := []libdns.Record{
-		{
-			Type:  "TXT",
-			Name:  "test1",
-			Value: "test1",
-			TTL:   ttl,
-		}, {
-			Type:  "TXT",
-			Name:  "test2",
-			Value: "test2",
-			TTL:   ttl,
-		}, {
-			Type:  "TXT",
-			Name:  "test3",
-			Value: "test3",
-			TTL:   ttl,
+		libdns.RR{
+			Type: "TXT",
+			Name: "test1",
+			Data: "test1",
+			TTL:  ttl,
+		}, libdns.RR{
+			Type: "TXT",
+			Name: "test2",
+			Data: "test2",
+			TTL:  ttl,
+		}, libdns.RR{
+			Type: "TXT",
+			Name: "test3",
+			Data: "test3",
+			TTL:  ttl,
 		},
 	}
 
@@ -87,41 +87,41 @@ func Test_AppendRecords(t *testing.T) {
 		{
 			// multiple records
 			records: []libdns.Record{
-				{Type: "TXT", Name: "test_1", Value: "test_1", TTL: ttl},
-				{Type: "TXT", Name: "test_2", Value: "test_2", TTL: ttl},
-				{Type: "TXT", Name: "test_3", Value: "test_3", TTL: ttl},
+				libdns.RR{Type: "TXT", Name: "test_1", Data: "test_1", TTL: ttl},
+				libdns.RR{Type: "TXT", Name: "test_2", Data: "test_2", TTL: ttl},
+				libdns.RR{Type: "TXT", Name: "test_3", Data: "test_3", TTL: ttl},
 			},
 			expected: []libdns.Record{
-				{Type: "TXT", Name: "test_1", Value: "test_1", TTL: ttl},
-				{Type: "TXT", Name: "test_2", Value: "test_2", TTL: ttl},
-				{Type: "TXT", Name: "test_3", Value: "test_3", TTL: ttl},
+				libdns.RR{Type: "TXT", Name: "test_1", Data: "test_1", TTL: ttl},
+				libdns.RR{Type: "TXT", Name: "test_2", Data: "test_2", TTL: ttl},
+				libdns.RR{Type: "TXT", Name: "test_3", Data: "test_3", TTL: ttl},
 			},
 		},
 		{
 			// relative name
 			records: []libdns.Record{
-				{Type: "TXT", Name: "123.test", Value: "123", TTL: ttl},
+				libdns.RR{Type: "TXT", Name: "123.test", Data: "123", TTL: ttl},
 			},
 			expected: []libdns.Record{
-				{Type: "TXT", Name: "123.test", Value: "123", TTL: ttl},
+				libdns.RR{Type: "TXT", Name: "123.test", Data: "123", TTL: ttl},
 			},
 		},
 		{
 			// (fqdn) sans trailing dot
 			records: []libdns.Record{
-				{Type: "TXT", Name: fmt.Sprintf("123.test.%s", strings.TrimSuffix(envZone, ".")), Value: "test", TTL: ttl},
+				libdns.RR{Type: "TXT", Name: fmt.Sprintf("123.test.%s", strings.TrimSuffix(envZone, ".")), Data: "test", TTL: ttl},
 			},
 			expected: []libdns.Record{
-				{Type: "TXT", Name: "123.test", Value: "test", TTL: ttl},
+				libdns.RR{Type: "TXT", Name: "123.test", Data: "test", TTL: ttl},
 			},
 		},
 		{
 			// fqdn with trailing dot
 			records: []libdns.Record{
-				{Type: "TXT", Name: fmt.Sprintf("123.test.%s.", strings.TrimSuffix(envZone, ".")), Value: "test", TTL: ttl},
+				libdns.RR{Type: "TXT", Name: fmt.Sprintf("123.test.%s.", strings.TrimSuffix(envZone, ".")), Data: "test", TTL: ttl},
 			},
 			expected: []libdns.Record{
-				{Type: "TXT", Name: "123.test", Value: "test", TTL: ttl},
+				libdns.RR{Type: "TXT", Name: "123.test", Data: "test", TTL: ttl},
 			},
 		},
 	}
@@ -139,20 +139,19 @@ func Test_AppendRecords(t *testing.T) {
 			}
 
 			for k, r := range result {
-				if len(result[k].ID) == 0 {
-					t.Fatalf("len(result[%d].ID) == 0", k)
+				rr := r.RR()
+				exp := c.expected[k].RR()
+				if rr.Type != exp.Type {
+					t.Fatalf("r.Type != c.exptected[%d].Type => %s != %s", k, rr.Type, exp.Type)
 				}
-				if r.Type != c.expected[k].Type {
-					t.Fatalf("r.Type != c.exptected[%d].Type => %s != %s", k, r.Type, c.expected[k].Type)
+				if rr.Name != exp.Name {
+					t.Fatalf("r.Name != c.exptected[%d].Name => %s != %s", k, rr.Name, exp.Name)
 				}
-				if r.Name != c.expected[k].Name {
-					t.Fatalf("r.Name != c.exptected[%d].Name => %s != %s", k, r.Name, c.expected[k].Name)
+				if rr.Data != exp.Data {
+					t.Fatalf("r.Value != c.exptected[%d].Value => %s != %s", k, rr.Data, exp.Data)
 				}
-				if r.Value != c.expected[k].Value {
-					t.Fatalf("r.Value != c.exptected[%d].Value => %s != %s", k, r.Value, c.expected[k].Value)
-				}
-				if r.TTL != c.expected[k].TTL {
-					t.Fatalf("r.TTL != c.exptected[%d].TTL => %s != %s", k, r.TTL, c.expected[k].TTL)
+				if rr.TTL != exp.TTL {
+					t.Fatalf("r.TTL != c.exptected[%d].TTL => %s != %s", k, rr.TTL, exp.TTL)
 				}
 			}
 		}()
@@ -180,13 +179,13 @@ func Test_DeleteRecords(t *testing.T) {
 	for _, testRecord := range testRecords {
 		var foundRecord *libdns.Record
 		for _, record := range records {
-			if testRecord.ID == record.ID {
+			if testRecord.RR().Name == record.RR().Name {
 				foundRecord = &testRecord
 			}
 		}
 
 		if foundRecord == nil {
-			t.Fatalf("Record not found => %s", testRecord.ID)
+			t.Fatalf("Record not found => %s", testRecord.RR().Name)
 		}
 	}
 }
@@ -212,17 +211,18 @@ func Test_GetRecords(t *testing.T) {
 	for _, testRecord := range testRecords {
 		var foundRecord *libdns.Record
 		for _, record := range records {
-			if testRecord.ID == record.ID {
+			if testRecord.RR().Name == record.RR().Name {
 				foundRecord = &testRecord
 			}
 		}
 
 		if foundRecord == nil {
-			t.Fatalf("Record not found => %s", testRecord.ID)
+			t.Fatalf("Record not found => %s", testRecord.RR().Name)
 		}
 	}
 }
 
+// TODO: This one don't work right just yet
 func Test_SetRecords(t *testing.T) {
 	p := &domainnameshop.Provider{
 		APIToken:  envToken,
@@ -231,22 +231,25 @@ func Test_SetRecords(t *testing.T) {
 
 	existingRecords, _ := setupTestRecords(t, p)
 	newTestRecords := []libdns.Record{
-		{
-			Type:  "TXT",
-			Name:  "new_test1",
-			Value: "new_test1",
-			TTL:   ttl,
+		libdns.RR{
+			Type: "TXT",
+			Name: "new_test1",
+			Data: "new_test1",
+			TTL:  ttl,
 		},
-		{
-			Type:  "TXT",
-			Name:  "new_test2",
-			Value: "new_test2",
-			TTL:   ttl,
+		libdns.RR{
+			Type: "TXT",
+			Name: "new_test2",
+			Data: "new_test2",
+			TTL:  ttl,
 		},
 	}
 
 	allRecords := append(existingRecords, newTestRecords...)
-	allRecords[0].Value = "new_value"
+
+	var test1 = allRecords[0].RR()
+	test1.Data = "new_value"
+	allRecords[0] = test1
 
 	records, err := p.SetRecords(context.TODO(), envZone, allRecords)
 	if err != nil {
@@ -257,8 +260,9 @@ func Test_SetRecords(t *testing.T) {
 	if len(records) != len(allRecords) {
 		t.Fatalf("len(records) != len(allRecords) => %d != %d", len(records), len(allRecords))
 	}
+	var test2 = records[0].RR()
 
-	if records[0].Value != "new_value" {
-		t.Fatalf(`records[0].Value != "new_value" => %s != "new_value"`, records[0].Value)
+	if test2.Data != "new_value" {
+		t.Fatalf(`records[0].Value != "new_value" => %s != "new_value"`, test2.Data)
 	}
 }
